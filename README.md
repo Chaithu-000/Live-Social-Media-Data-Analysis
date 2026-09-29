@@ -1,4 +1,24 @@
 # LIVE SOCIAL MEDIA DATA ANALYSIS
+Team Details
+
+Team 14
+
+Team Leader
+
+S. Penchala Chaitanya
+
+Roll Number: 25B11CS902
+
+Team Members
+
+
+1   	S. Penchala Chaitanya  	25B11CS902
+
+2	    Konappagari Pandu	  25B11CS457
+
+3	   S. Radha Sai Lakshmi	  25B11CS854
+
+4    	M. Divya      	25B11CS520
 
 ## 1. Project Overview
 
