@@ -1,0 +1,6 @@
+feedparser
+vaderSentiment
+seaborn
+matplotlib
+pandas
+nltk
