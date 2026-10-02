@@ -1,40 +1,34 @@
+
 # LIVE SOCIAL MEDIA DATA ANALYSIS
-Team Details
 
-time table 2 
+**Team Details**
 
-Team 14
+* **Time Table:** 2
+* **Team:** 14
+* **Team Leader:** S. Penchala Chaitanya (Roll Number: 25B11CS902)
 
-Team Leader
+**Team Members:**
 
-S. Penchala Chaitanya
+1. S. Penchala Chaitanya (25B11CS902)
+2. Konappagari Pandu (25B11CS457)
+3. S. Radha Sai Lakshmi (25B11CS854)
+4. M. Divya (25B11CS520)
 
-Roll Number: 25B11CS902
-
-Team Members
-
-
-1   	S. Penchala Chaitanya  	25B11CS902
-
-2	    Konappagari Pandu	  25B11CS457
-
-3	   S. Radha Sai Lakshmi	  25B11CS854
-
-4    	M. Divya      	25B11CS520
+---
 
 ## 1. Project Overview
 
-This project focuses on analyzing live social-media-related online information using data analysis and visualization techniques. The system collects current news articles through RSS feeds, preprocesses the collected text, performs sentiment analysis and keyword analysis, and presents the results through a six-panel analytical dashboard.
+This project focuses on analyzing live social media, tech forums, and news-related online information using data analysis and visualization techniques. The system collects current posts and articles through RSS feeds and public APIs, preprocesses the collected text, performs sentiment analysis and keyword analysis, and presents the results through a six-panel analytical dashboard.
 
-The project demonstrates how continuously changing online information can be collected and transformed into meaningful insights using Python, Pandas, VADER Sentiment Analysis, Matplotlib, Seaborn, NLTK, and Feedparser.
+The project demonstrates how continuously changing online information can be collected and transformed into meaningful insights using Python, Pandas, VADER Sentiment Analysis, Matplotlib, Requests, and Feedparser.
 
 ---
 
 ## 2. Problem Statement
 
-A large amount of information is generated continuously through online news and social-media-related platforms. Manually examining this information is time-consuming and makes it difficult to identify overall sentiment, major topics, and differences between information sources.
+A large amount of information is generated continuously through online news and social media platforms. Manually examining this information is time-consuming and makes it difficult to identify overall sentiment, major topics, and differences between various digital information sources.
 
-This project addresses this problem by automatically collecting live RSS-based news data and applying data cleaning, sentiment analysis, keyword analysis, statistical analysis, and visualization to produce meaningful insights.
+This project addresses this problem by automatically collecting live data from social networks (Mastodon), tech forums (Hacker News), and global news outlets (RSS feeds). It applies data cleaning, sentiment analysis, keyword analysis, and statistical visualization to produce automated, meaningful insights.
 
 ---
 
@@ -42,500 +36,256 @@ This project addresses this problem by automatically collecting live RSS-based n
 
 The main objectives of this project are:
 
-* To collect live online news data using RSS feeds.
-* To preprocess and clean the collected data.
-* To remove duplicate articles.
-* To perform sentiment analysis on article content.
-* To classify articles as Positive, Neutral, or Negative.
-* To identify frequently occurring meaningful keywords.
-* To compare sentiment across different news sources.
+* To collect live online data from multiple diverse sources using APIs and RSS feeds.
+* To preprocess and clean the collected data (removing HTML, URLs, and junk characters).
+* To remove duplicate content.
+* To perform natural language sentiment analysis on the content.
+* To classify text as Positive, Neutral, or Negative using VADER thresholds.
+* To identify frequently occurring meaningful keywords across all platforms.
+* To compare sentiment and volume (word counts) across different sources.
 * To perform statistical analysis using Pandas.
-* To visualize the results using different charts.
-* To generate meaningful findings from the analyzed data.
+* To visualize the results using a 6-panel Matplotlib dashboard.
+* To generate exportable CSV reports containing the findings.
 
 ---
 
 ## 4. Scope of the Project
 
-The project focuses on the analysis of live online news information collected through RSS feeds.
+The project focuses on the real-time text analysis of live online information collected from 10 distinct sources across three categories:
 
-The current implementation uses RSS feeds from:
+**Social Source (Mastodon RSS):**
 
-* The New York Times
-* BBC News
-* The Guardian
+* Mastodon (Tags: #news, #technology, #science, #music, #art, #sports)
 
-The system collects up to 10 articles from each source during each execution and analyzes the available article titles and summaries.
+**Tech Source (Public JSON API):**
 
-The scope includes:
+* Hacker News (Top Stories)
 
-* Live data collection
-* Text preprocessing
-* Duplicate removal
-* Sentiment analysis
-* Keyword extraction
-* Statistical analysis
-* Data visualization
-* Source-wise comparison
-* Headline-level sentiment analysis
+**News Sources (RSS Feeds):**
+
+1. BBC News
+2. The Guardian
+3. Al Jazeera
+4. NPR
+5. NYT World
+6. Times of India
+7. The Hindu
+8. NDTV
+
+The system collects up to **40 articles** per news feed, **15 posts** per Mastodon tag, and **50 top stories** from Hacker News during each execution.
 
 ---
 
 ## 5. Significance of the Project
 
-The project demonstrates the practical use of data analysis techniques on continuously changing online information.
+The project demonstrates the practical use of data analysis techniques on a diverse range of continuously changing digital sources. Instead of looking at just one newspaper, it provides a simple way to understand and contrast the tone of traditional news media versus social networks and tech communities.
 
-It provides a simple way to understand:
-
-* The amount of information collected from different sources.
-* The overall sentiment distribution.
-* Differences in sentiment between sources.
-* The most frequently occurring keywords.
-* The distribution of sentiment scores.
-* The most positive and negative headlines.
-
-The project can serve as a foundation for larger real-time information monitoring and analytics systems.
+It provides a foundation for larger real-time digital analytics systems used in brand monitoring, public relations, and trend forecasting.
 
 ---
 
-# 6. Dataset
+## 6. Dataset
 
-## Dataset Source
+**Dataset Source:**
+The data is collected dynamically on execution from public RSS feeds and the Hacker News Firebase JSON API.
 
-The data is collected dynamically from RSS feeds provided by online news sources.
+**Dataset Description:**
+Each collected item provides information that is processed and stored in a Pandas DataFrame. The primary attributes in the generated dataset are:
 
-The current RSS sources are:
+| Attribute | Description |
+| --- | --- |
+| `source` | Name of the platform or news outlet |
+| `category` | Classification (Social, Tech, News) |
+| `title` | Article headline or post title |
+| `text` | Cleaned post text or article summary |
+| `word_count` | Total number of words in the text |
+| `sentiment_score` | VADER compound score (-1.0 to +1.0) |
+| `sentiment_label` | Positive, Neutral, or Negative classification |
 
-1. The New York Times
-2. BBC News
-3. The Guardian
-
-The RSS feed URLs are defined in the Python program.
-
-## Dataset Description
-
-Each RSS article provides information that is processed and stored in a Pandas DataFrame.
-
-The primary collected attributes are:
-
-| Attribute   | Description                    |
-| ----------- | ------------------------------ |
-| `newspaper` | Name of the news source        |
-| `title`     | Article headline               |
-| `summary`   | Article summary or description |
-
-The project then generates additional analytical attributes:
-
-| Attribute         | Description                        |
-| ----------------- | ---------------------------------- |
-| `raw_text`        | Combined article title and summary |
-| `sentiment_score` | VADER compound sentiment score     |
-| `sentiment_label` | Positive, Neutral, or Negative     |
-
-These fields are created during the data collection and analysis pipeline.
-
-## Number of Records
-
-The program collects up to 10 articles from each RSS source.
-
-With three sources, the maximum number of collected records before duplicate removal is approximately 30 articles per execution.
-
-The final number can vary because duplicate articles are removed.
-
-## Important Attributes
-
-The most important attributes for analysis are:
-
-* `newspaper`
-* `title`
-* `summary`
-* `sentiment_score`
-* `sentiment_label`
+**Number of Records:**
+The maximum number of collected records before duplicate removal is over 450 items per execution. After cleaning and duplicate removal, the final dataset typically contains a robust, highly relevant set of current digital data.
 
 ---
 
-# 7. Technologies Used
+## 7. Technologies Used
 
 The project uses the following technologies and Python libraries:
 
-* Python
-* Pandas
-* Feedparser
-* VADER Sentiment
-* NLTK
-* Matplotlib
-* Seaborn
-* Regular Expressions
-* Jupyter Notebook / Google Colab
+* **Python:** Core programming language
+* **Pandas:** Data manipulation, aggregation, and statistical analysis
+* **Feedparser:** Parsing XML RSS feeds
+* **Requests:** Handling HTTP requests for JSON APIs
+* **VADER Sentiment:** Rule-based sentiment analysis
+* **Matplotlib:** Data visualization and dashboard generation
+* **Regular Expressions (`re`):** Text cleaning
 
 ---
 
-# 8. Project Workflow
+## 8. Project Workflow
 
-The overall workflow of the project is:
-
-**Live RSS Feeds**
-
+**Live Data Collection (APIs & RSS)**
 ↓
-
-**Data Collection**
-
+**Data Cleaning (HTML & URL Removal)**
 ↓
-
-**Data Cleaning**
-
+**Duplicate & Junk Removal**
 ↓
-
-**Duplicate Removal**
-
+**Word Counting & Keyword Extraction**
 ↓
-
-**Text Preparation**
-
+**Sentiment Analysis (VADER)**
 ↓
-
-**Sentiment Analysis**
-
+**Source-wise Statistical Grouping**
 ↓
-
-**Keyword Analysis**
-
+**Dashboard Visualization**
 ↓
-
-**Statistical Analysis**
-
-↓
-
-**Data Visualization**
-
-↓
-
-**Findings and Conclusions**
+**Export Findings to CSV**
 
 ---
 
-# 9. Data Loading and Inspection
+## 9. Data Loading and Inspection
 
-The project uses the Feedparser library to read RSS feeds.
-
-The collected records are converted into a Pandas DataFrame for further processing.
-
-The program also checks whether articles were successfully returned from each source. If a source does not return articles, a warning is displayed.
-
-If no articles are collected from any source, the program stops and asks the user to check the internet connection.
+The program uses `feedparser` for RSS feeds and the `requests` library for Hacker News. The collected records are appended to a list of dictionaries and converted into a Pandas DataFrame. The console logs the exact number of successful items retrieved from each of the 10 sources in real time.
 
 ---
 
-# 10. Missing-Value Handling
+## 10. Missing-Value and Error Handling
 
-The RSS extraction uses safe field access when reading article information.
-
-For example, the program attempts to obtain the article title and summary while providing an empty value if the corresponding RSS field is unavailable.
-
-The program also handles sources that return no articles by skipping those sources.
-
-If no articles are available from any source, the program stops instead of continuing with an empty dataset.
+The extraction uses safe access and `try-except` blocks. If an API times out or a feed is down, the program prints a failure message for that specific source and continues executing the rest of the pipeline safely. Text fields that are empty fall back to using the title text to ensure no empty data breaks the sentiment analyzer.
 
 ---
 
-# 11. Duplicate Removal
+## 11. Duplicate Removal
 
-Duplicate articles are removed using the combination of:
-
-* Newspaper/source
-* Article title
-
-This prevents the same article from being counted multiple times during analysis.
-
-The duplicate removal is performed using Pandas `drop_duplicates()`.
+Duplicate articles are removed using the combination of source and article title to prevent the same trending story from being counted multiple times. Furthermore, rows containing less than 10 characters of text are dropped to ensure high data quality. The duplicate removal is performed using Pandas `drop_duplicates(subset=["title"])`.
 
 ---
 
-# 12. Data Cleaning and Filtering
+## 12. Data Cleaning and Filtering
 
-The project performs several text-cleaning operations.
+The project utilizes a custom `clean_text()` function. The cleaning process:
 
-The cleaning process:
-
-* Removes HTML tags.
-* Converts HTML entities.
-* Removes "Continue reading" text.
-* Removes unnecessary whitespace.
-* Converts text to lowercase during keyword processing.
-* Removes URLs during keyword processing.
-* Extracts alphabetic words.
-* Keeps words with at least three characters.
-* Removes common stopwords.
-
-The project also adds news-specific stopwords such as `said`, `says`, `new`, and other frequently occurring words that do not provide useful information for keyword analysis.
+* Removes HTML tags using regular expressions (`<[^>]+>`).
+* Converts HTML entities (e.g., `&amp;` -> `&`).
+* Removes web URLs (http/https).
+* Normalizes whitespace to a single space.
+* During keyword analysis, it extracts only alphabetic words (3+ characters), converts them to lowercase, and filters out an extensive list of custom `STOP_WORDS` (including "said", "new", "https", etc.).
 
 ---
 
-# 13. Data Transformation
+## 13. Sentiment Analysis
 
-The article title and summary are combined into a single `raw_text` field.
-
-This combined text is used for sentiment analysis and keyword analysis.
-
-The sentiment score is then transformed into a categorical sentiment label:
-
-* Positive
-* Neutral
-* Negative
-
----
-
-# 14. Sentiment Analysis
-
-The project uses **VADER Sentiment Analysis**.
-
-VADER generates a compound sentiment score between -1 and +1.
+The project uses **VADER (Valence Aware Dictionary and sEntiment Reasoner)**. VADER generates a compound sentiment score between -1 and +1.
 
 The project uses the following thresholds:
 
-* Score >= 0.05 → Positive
-* Score <= -0.05 → Negative
-* Between -0.05 and 0.05 → Neutral
+* **Score >= 0.05:** Positive
+* **Score <= -0.05:** Negative
+* **Between -0.05 and 0.05:** Neutral
 
-These thresholds are defined in the project settings.
-
-The sentiment analysis is performed on the original article text because words such as "not" and punctuation can affect the meaning and VADER's interpretation.
+Sentiment analysis is performed on the fully cleaned text, maintaining punctuation that VADER relies on for contextual understanding (like exclamation marks).
 
 ---
 
-# 15. Keyword Analysis
+## 14. Keyword Analysis
 
-Keyword analysis is used to identify the most frequently occurring meaningful words in the collected article titles and summaries.
-
-The project removes common stopwords and counts the remaining words.
-
-The system displays the top 12 keywords.
+Keyword analysis is used to identify the most frequently occurring meaningful words across all platforms. The script uses Python's `Counter` module to tally all valid words after stopwords are removed. The system captures and plots the Top 12 trending keywords.
 
 ---
 
-# 16. Pandas Operations and Data Manipulation
+## 15. Pandas Operations and Data Manipulation
 
-Pandas is used extensively for data manipulation and analysis.
+Pandas is used extensively. Important operations include:
 
-Important operations include:
-
-* DataFrame creation
-* Duplicate removal
-* Value counting
-* Grouping
-* Aggregation
-* Sorting
-* Crosstab analysis
-* Filtering
-* Ranking
-
-Examples include:
-
-```python
-df.drop_duplicates()
-```
-
-```python
-df["newspaper"].value_counts()
-```
-
-```python
-df.groupby("newspaper")["sentiment_score"].mean()
-```
-
-```python
-df.nlargest(3, "sentiment_score")
-```
-
-```python
-df.nsmallest(3, "sentiment_score")
-```
+* `df.drop_duplicates()`: Removing repeated news cycles.
+* `df.groupby("source")`: Aggregating stats per platform.
+* `pd.crosstab()`: Calculating the exact percentage makeup of Positive/Neutral/Negative items per source.
+* `df.nlargest()` / `df.nsmallest()`: Fetching the most extreme sentiment headlines for the final console report.
 
 ---
 
-# 17. Grouping, Sorting and Aggregation
+## 16. Statistical Analysis
 
-The project groups sentiment scores by newspaper to calculate the average sentiment for each source.
+The project performs several source-level statistical analyses:
 
-The average sentiment values are sorted from high to low to enable source-level comparison.
-
-The project also uses cross-tabulation to calculate the percentage distribution of sentiment categories for each newspaper.
-
----
-
-# 18. Statistical Analysis
-
-The project performs several statistical analyses, including:
-
-* Number of articles collected from each source.
-* Overall average sentiment score.
-* Average sentiment score by source.
-* Number and percentage of Positive, Neutral, and Negative articles.
-* Distribution of sentiment scores.
-* Frequency of important keywords.
-* Most positive headlines.
-* Most negative headlines.
-
-The final summary reports the total number of articles, number of sources, source-level sentiment values, and overall average sentiment.
+* Total items collected per source.
+* Total volume of words analyzed per source.
+* Average words per post/article (identifying short-form vs. long-form platforms).
+* Average sentiment score (mood) by source.
+* Percentage distribution of sentiment labels.
 
 ---
 
-# 19. Data Visualizations
+## 17. Data Visualizations
 
-The project creates a six-panel dashboard.
+The project uses Matplotlib to generate a high-resolution, six-panel dashboard:
 
-### 1. Articles Collected
-
-A bar chart showing how many articles were collected from each news source.
-
-### 2. Overall Sentiment Mix
-
-A donut chart showing the overall proportion of:
-
-* Negative
-* Neutral
-* Positive
-
-articles.
-
-### 3. Sentiment Mix by Newspaper
-
-A 100% stacked bar chart comparing the percentage of Positive, Neutral, and Negative articles for each source.
-
-### 4. Average Sentiment Score
-
-A bar chart comparing the average sentiment score of each source.
-
-A score above zero represents a more positive average tone, while a score below zero represents a more negative average tone.
-
-### 5. Spread of Sentiment Scores
-
-A box plot showing the distribution of sentiment scores for each source. Individual dots represent individual articles.
-
-### 6. Top Keywords
-
-A horizontal bar chart showing the top 12 meaningful keywords identified from the collected content.
-
-These six visualizations form the project's main analytical dashboard.
+1. **Items per Source (Bar Chart):** Shows data volume contributed by each source.
+2. **Total Words (Bar Chart):** Shows total text volume processed per source.
+3. **Average Words per Item (Bar Chart):** Compares the text density of social posts versus news articles.
+4. **Sentiment Mix (100% Stacked Bar Chart):** Compares the percentage makeup of Positive (Green), Neutral (Gray), and Negative (Red) items for each source.
+5. **Average Sentiment Score (Bar Chart):** Plots the overall mood of each platform. Positive averages plot upwards in green, negative averages plot downwards in red.
+6. **Top 12 Words (Horizontal Bar Chart):** Displays the most frequently mentioned keywords across the entire live dataset.
 
 ---
 
-# 20. Interpretation of Visualizations
+## 18. Interpretation of Visualizations
 
-The visualizations help interpret the collected data from different perspectives.
-
-* The article-count chart shows the contribution of each source.
-* The donut chart shows the overall sentiment composition.
-* The stacked bar chart enables source-wise sentiment comparison.
-* The average sentiment chart shows differences in average tone.
-* The box plot shows the spread and distribution of sentiment scores.
-* The keyword chart identifies the most frequently mentioned meaningful terms.
-
-Together, these visualizations provide a broader understanding of the collected online information.
+* The **Items and Words** charts show which platforms dominate the data pool.
+* The **Average Words** chart highlights the structural difference between social media (short text) and traditional news (long text).
+* The **Stacked Sentiment** and **Average Sentiment** charts reveal platform bias—showing if certain news outlets or social tags skew heavily negative or positive at the current moment.
+* The **Keyword** chart acts as a snapshot of what the world is talking about right now.
 
 ---
 
-# 21. Findings
+## 19. Findings and Results
 
-The project produces findings based on the live dataset collected during each execution.
+Because the data is live, findings change on every execution. However, the system permanently logs the findings by exporting three files:
 
-The main findings include:
+1. **`capstone_dashboard.png`**: The 6-chart visual dashboard.
+2. **`capstone_data.csv`**: The complete, cleaned dataset containing all text and sentiment scores.
+3. **`capstone_summary.csv`**: The aggregated source-level statistics.
 
-* The number of articles contributed by each source.
-* The overall distribution of Positive, Neutral, and Negative articles.
-* Differences in sentiment distribution between sources.
-* Average sentiment score for each source.
-* Frequently occurring keywords.
-* The most positive and negative headlines according to the sentiment score.
-
-The exact numerical findings can change each time the live RSS data is collected.
+The console also prints a live summary identifying the most positive and negative platforms overall, and highlights the 3 most positive and negative specific headlines.
 
 ---
 
-# 22. Results
+## 20. Conclusion
 
-The final result of the project is a live analytical dashboard containing six visualizations along with a text-based summary.
+This project successfully demonstrates a complete, automated ETL (Extract, Transform, Load) data-analysis workflow using Python.
 
-The system also identifies the three most positive and three most negative headlines based on their sentiment scores.
-
-The dashboard is saved as:
-
-`news_dashboard.png`
+By scaling beyond a few basic RSS feeds to include API-based tech forums and tag-based social media networks, the project provides a much richer and more accurate representation of current digital sentiment. The automated dashboard instantly converts chaotic online text into digestible, structured business intelligence.
 
 ---
 
-# 23. Conclusion
+## 21. Limitations
 
-This project demonstrates how live online information can be collected, processed, analyzed, and visualized using Python.
-
-By combining RSS-based data collection, data preprocessing, sentiment analysis, keyword analysis, statistical analysis, and visualization, the project converts continuously changing online information into meaningful analytical insights.
-
-The dashboard provides a simple way to understand article volume, sentiment distribution, source-wise differences, sentiment-score patterns, and frequently occurring keywords.
-
----
-
-# 24. Limitations
-
-The current implementation has the following limitations:
-
-* Only three RSS news sources are currently used.
-* A maximum of 10 articles per source is collected during each execution.
-* The dataset changes depending on the current RSS feed contents.
-* The project uses RSS-based online news content rather than directly collecting posts from social-media platforms.
-* VADER may not correctly understand every form of sarcasm, context, or complex language.
-* Keyword frequency does not necessarily represent the importance of a topic.
-* The analysis represents the content available at the time the program is executed.
+* The dataset is highly time-sensitive; results rely entirely on the exact moment the script is executed.
+* Hacker News restricts API limits to the top 50 stories.
+* VADER may not correctly understand deep sarcasm, irony, or highly domain-specific technical jargon on Hacker News.
+* Keyword frequency alone does not perfectly measure the true contextual importance of a trending topic.
 
 ---
 
-# 25. How to Run the Project
+## 22. How to Run the Project
 
-## Step 1: Clone the Repository
-
-Clone the GitHub repository to your local system.
-
-## Step 2: Install Dependencies
-
-Install the required Python libraries:
+**Step 1: Install Dependencies**
+Install the required Python libraries using pip:
 
 ```bash
-pip install -r requirements.txt
+pip install pandas matplotlib feedparser requests vaderSentiment
+
 ```
 
-## Step 3: Run the Python Program
-
-Run:
+**Step 2: Run the Python Program**
+Execute the script from your terminal:
 
 ```bash
-python src/social_media_analysis.py
+python capstone_project.py
+
 ```
 
-Alternatively, open:
+**Step 3: View the Results**
+After execution, the program will print the real-time extraction logs and text summary to the terminal. The visualization dashboard will display on screen, and the following files will be saved in your directory:
 
-```text
-notebook/social_media_analysis.ipynb
-```
-
-in Jupyter Notebook or Google Colab.
-
-## Step 4: View the Results
-
-After execution, the program displays the dashboard and analytical summary.
-
-The dashboard can be saved as:
-
-```text
-news_dashboard.png
-```
-
----
-
-
-
-#. Project Outcome
-
-The project successfully demonstrates a complete data-analysis workflow:
-
-**Data Collection → Data Cleaning → Data Transformation → Sentiment Analysis → Keyword Analysis → Statistical Analysis → Visualization → Findings → Conclusion**
-
-The project provides a practical demonstration of Python-based data analysis on live online information.
+* `capstone_dashboard.png`
+* `capstone_data.csv`
+* `capstone_summary.csv`
