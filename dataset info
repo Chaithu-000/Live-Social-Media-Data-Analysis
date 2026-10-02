@@ -1,11 +1,12 @@
-## Dataset Source
+Dataset Source
+The project uses live data retrieved directly from social media, tech forums, and top news outlets using RSS feeds and APIs. The data is collected from 10 distinct sources, including:
 
-The project uses live data retrieved from online news sources through RSS feeds. The data is collected directly from the following sources:
+Social: Mastodon
 
-* The New York Times
-* BBC News
-* The Guardian
+Tech: Hacker News
 
-The system retrieves the latest available articles from these RSS feeds during each execution. The collected data includes the article title, summary, and source name. The data is then processed for cleaning, sentiment analysis, keyword analysis, and visualization.
+News: 8 Global Outlets (like BBC News, The New York Times, and Times of India)
 
-Since the data is retrieved dynamically, the dataset may change each time the project is executed depending on the latest articles available from the sources.
+During each run, the system retrieves the latest available headlines, source names, and article summaries. This text is then cleaned and processed for sentiment analysis, keyword tracking, and visualization.
+
+Because the data is pulled dynamically in real-time, the dataset is always fresh! It will change every time you execute the project to reflect the most current online trends and news of the day.
