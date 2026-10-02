@@ -1,242 +1,504 @@
 # ==============================================================================
-# LIVE GLOBAL social media DASHBOARD  (improved version)
-# Run in Google Colab / Jupyter. Reads live RSS feeds, scores each article's
-# sentiment, and shows a 6-panel dashboard + top headlines.
+# LIVE SOCIAL MEDIA DATA ANALYSIS
+# Real-Time Sentiment Analysis of Social Media & Online News Content
 # ==============================================================================
-!pip install -q feedparser vaderSentiment seaborn matplotlib pandas nltk
+#
+# Team Details
+#
+# Time Table: 2
+# Team Number: 14
+#
+# Team Leader
+#     S. Penchala Chaitanya       Roll Number: 25B11CS902
+#
+# Team Members
+#     1    S. Penchala Chaitanya     25B11CS902
+#     2    Konappagari Pandu         25B11CS457
+#     3    S. Radha Sai Lakshmi      25B11CS854
+#     4    M. Divya                  25B11CS520
+#
+# ==============================================================================
 
-import html
+
+# ==============================================================================
+# 1. Project Overview
+# ------------------------------------------------------------------------------
+# This project focuses on analysing live social-media and news-related online
+# information using data analysis and visualization techniques. The system
+# collects current posts and articles through RSS feeds and a public API,
+# preprocesses the collected text, performs sentiment analysis and keyword
+# analysis, and presents the results through a six-panel analytical dashboard.
+#
+# The project demonstrates how continuously changing online information can
+# be collected and transformed into meaningful insights using Python,
+# Pandas, VADER Sentiment Analysis, Matplotlib, Feedparser, and Requests.
+# ==============================================================================
+
+
+# ==============================================================================
+# 2. Libraries Used
+# ------------------------------------------------------------------------------
+# The project uses the following Python libraries:
+#     - re          : Regular expressions for text cleaning
+#     - html        : HTML entity handling (&amp; -> &)
+#     - requests    : HTTP requests to public APIs
+#     - feedparser  : RSS feed parsing
+#     - pandas      : Data manipulation and analysis
+#     - matplotlib  : Data visualization
+#     - datetime    : Date and time handling
+#     - Counter     : Keyword frequency counting
+#     - vaderSentiment : Sentiment analysis (VADER)
+# ==============================================================================
+
 import re
-import textwrap
-from collections import Counter
-from datetime import datetime
-
+import html
+import requests
 import feedparser
-import matplotlib.pyplot as plt
-import nltk
 import pandas as pd
-import seaborn as sns
+import matplotlib.pyplot as plt
+
+from datetime import datetime
+from collections import Counter
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
-nltk.download("stopwords", quiet=True)
-from nltk.corpus import stopwords
 
+# ==============================================================================
+# 3. Settings and Configuration
 # ------------------------------------------------------------------------------
-# SETTINGS  (change things here, not deep in the code)
-# ------------------------------------------------------------------------------
-RSS_SOURCES = {
-    "The New York Times": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
-    "BBC News": "http://feeds.bbci.co.uk/news/world/rss.xml",
-    "The Guardian": "https://www.theguardian.com/world/rss",
+# All adjustable parameters are defined here so the project can be easily
+# modified without changing the main logic.
+# ==============================================================================
+
+MAX_ITEMS = 40          # Maximum items per RSS feed
+TOP_N_WORDS = 12        # Number of top keywords to display
+
+# Sentiment category colors
+COLORS = {
+    "Negative": "#E74C3C",   # red
+    "Neutral":  "#B0B7BD",   # gray
+    "Positive": "#2ECC71",   # green
+}
+MOODS = ["Negative", "Neutral", "Positive"]
+
+# Common stopwords removed during keyword analysis
+STOP_WORDS = {
+    "the","and","for","that","with","was","are","this","from","have","has",
+    "had","not","but","his","her","its","they","their","them","will","would",
+    "could","should","been","were","who","what","when","where","which","while",
+    "about","after","before","into","over","than","then","there","these",
+    "those","also","more","most","some","such","only","other","just","how",
+    "why","you","your","can","all","out","our","she","him","one","two","new",
+    "say","says","said","year","years","amp","because","against","between",
+    "during","under","may","now","does","did","get","got","link","https",
+    "http","com","www",
 }
 
-SENTIMENT_ORDER = ["Negative", "Neutral", "Positive"]        # same order everywhere
-SENTIMENT_COLORS = {"Negative": "#E74C3C", "Neutral": "#B0B7BD", "Positive": "#2ECC71"}
-POS_THRESHOLD, NEG_THRESHOLD = 0.05, -0.05                   # VADER's standard cut-offs
-TOP_N_WORDS = 12
-SAVE_PNG = True
-
-# Words that appear in almost every news feed and say nothing useful
-EXTRA_STOPWORDS = {"said", "says", "say", "new", "us", "also", "one", "two", "would",
-                   "could", "year", "years", "after", "continue", "reading", "amp"}
-STOP_WORDS = set(stopwords.words("english")) | EXTRA_STOPWORDS
-
-
-# ------------------------------------------------------------------------------
-# 1. FETCH DATA
-# ------------------------------------------------------------------------------
-def strip_html(text: str) -> str:
-    """Remove HTML tags/entities and 'Continue reading...' leftovers."""
-    text = re.sub(r"<[^>]+>", " ", str(text))
-    text = html.unescape(text)
-    text = re.sub(r"Continue reading\.*", "", text, flags=re.I)
-    return re.sub(r"\s+", " ", text).strip()
-
-
-def fetch_articles(sources: dict) -> pd.DataFrame:
-    rows = []
-    for name, url in sources.items():
-        try:
-            feed = feedparser.parse(url)
-            if not feed.entries:
-                print(f"⚠️  No articles returned for {name}")
-                continue
-            # LIMIT APPLIED HERE: Only take the first 10 entries per source
-            for e in feed.entries[:10]:
-                rows.append({
-                    "newspaper": name,
-                    "title": strip_html(e.get("title", "")),
-                    "summary": strip_html(e.get("summary", e.get("description", ""))),
-                })
-        except Exception as err:                     # one bad feed shouldn't stop the rest
-            print(f"⚠️  Could not read {name}: {err}")
-    df = pd.DataFrame(rows)
-    if df.empty:
-        raise SystemExit("No articles fetched - check your internet connection.")
-    return df.drop_duplicates(subset=["newspaper", "title"]).reset_index(drop=True)
-
-
-now = datetime.now()
-print(f"⏳ Fetching LIVE news at {now:%Y-%m-%d %H:%M:%S}...\n")
-df = fetch_articles(RSS_SOURCES)
-df["raw_text"] = df["title"] + ". " + df["summary"]
-
-
-# ------------------------------------------------------------------------------
-# 2. SENTIMENT
-# Note: VADER is scored on the ORIGINAL text. The old code scored the "cleaned"
-# text, which removed words like "not"/"no" and punctuation that VADER uses to
-# understand meaning ("not good" would have looked positive!).
-# ------------------------------------------------------------------------------
+# Initialize the VADER sentiment analyzer
 analyzer = SentimentIntensityAnalyzer()
 
 
-def to_label(score: float) -> str:
-    if score >= POS_THRESHOLD:
-        return "Positive"
-    if score <= NEG_THRESHOLD:
-        return "Negative"
+# ==============================================================================
+# 4. Helper Functions
+# ------------------------------------------------------------------------------
+# Small reusable functions used throughout the data-analysis pipeline.
+# ==============================================================================
+
+def clean_text(text):
+    """
+    Remove HTML tags and web links from text.
+
+    Example:
+        Input  : "<p>Hello &amp; welcome</p> Visit https://x.com"
+        Output : "Hello & welcome Visit"
+    """
+    text = re.sub(r"<[^>]+>", " ", str(text))     # remove HTML tags
+    text = html.unescape(text)                    # &amp; -> &
+    text = re.sub(r"https?://\S+", "", text)      # remove URLs
+    return re.sub(r"\s+", " ", text).strip()      # normalize whitespace
+
+
+def score_to_label(score):
+    """
+    Convert a VADER compound score into a sentiment label.
+
+    Thresholds:
+        score >=  0.05  -> "Positive"
+        score <= -0.05  -> "Negative"
+        otherwise       -> "Neutral"
+    """
+    if score >= 0.05:  return "Positive"
+    if score <= -0.05: return "Negative"
     return "Neutral"
 
 
-df["sentiment_score"] = df["raw_text"].apply(lambda t: analyzer.polarity_scores(t)["compound"])
-df["sentiment_label"] = pd.Categorical(
-    df["sentiment_score"].apply(to_label), categories=SENTIMENT_ORDER, ordered=True
-)
-
-
-# ------------------------------------------------------------------------------
-# 3. KEYWORDS  (cleaning is only needed here, for word counting)
-# ------------------------------------------------------------------------------
-def tokenize(text: str) -> list:
-    text = re.sub(r"http\S+|www\S+", "", text.lower())
-    words = re.findall(r"[a-z]{3,}", text)           # letters only, 3+ chars
+def get_keywords(text):
+    """Extract meaningful words only (3+ letters, not stopwords)."""
+    words = re.findall(r"[a-z]{3,}", text.lower())
     return [w for w in words if w not in STOP_WORDS]
 
 
-word_counts = Counter(w for t in df["raw_text"] for w in tokenize(t))
-top_words = pd.Series(dict(word_counts.most_common(TOP_N_WORDS)))
-
-
+# ==============================================================================
+# 5. Data Collection
 # ------------------------------------------------------------------------------
-# 4. DASHBOARD
+# The system collects live online information from the following sources:
+#
+#     Social source (1 RSS endpoint, 6 hashtags)
+#         - Mastodon (#news, #technology, #science, #music, #art, #sports)
+#
+#     Tech source (1 public API)
+#         - Hacker News
+#
+#     News sources (8 RSS feeds)
+#         - BBC News
+#         - The Guardian
+#         - Al Jazeera
+#         - NPR
+#         - The New York Times (World)
+#         - Times of India
+#         - The Hindu
+#         - NDTV
+#
+# Each collector returns a list of dictionaries with the same schema:
+#     {"source": ..., "category": ..., "title": ..., "text": ...}
+# ==============================================================================
+
+def collect_mastodon():
+    """Download social media posts from Mastodon (free RSS)."""
+    tags = ["news", "technology", "science", "music", "art", "sports"]
+    rows = []
+    for tag in tags:
+        try:
+            feed = feedparser.parse(
+                f"https://mastodon.social/tags/{tag}.rss",
+                agent="Mozilla/5.0")
+            for e in feed.entries[:15]:
+                rows.append({
+                    "source":   f"Mastodon #{tag}",
+                    "category": "Social",
+                    "title":    clean_text(e.get("title", "")),
+                    "text":     clean_text(e.get("summary", "")),
+                })
+        except Exception:
+            pass
+    print(f"   Mastodon          : {len(rows):3d} posts")
+    return rows
+
+
+def collect_hackernews():
+    """Download top tech stories from Hacker News (free public API)."""
+    rows = []
+    try:
+        ids = requests.get(
+            "https://hacker-news.firebaseio.com/v0/topstories.json",
+            timeout=15).json()[:50]
+
+        for sid in ids:
+            try:
+                item = requests.get(
+                    f"https://hacker-news.firebaseio.com/v0/item/{sid}.json",
+                    timeout=10).json()
+                if item and item.get("title"):
+                    rows.append({
+                        "source":   "Hacker News",
+                        "category": "Tech",
+                        "title":    clean_text(item["title"]),
+                        "text":     clean_text(item.get("text", "") or item["title"]),
+                    })
+            except Exception:
+                pass
+        print(f"   Hacker News       : {len(rows):3d} stories")
+    except Exception:
+        print(f"   Hacker News failed")
+    return rows
+
+
+def collect_news():
+    """Download news from 8 RSS feeds (free, no login required)."""
+    feeds = {
+        "BBC News":       "http://feeds.bbci.co.uk/news/world/rss.xml",
+        "The Guardian":   "https://www.theguardian.com/world/rss",
+        "Al Jazeera":     "https://www.aljazeera.com/xml/rss/all.xml",
+        "NPR":            "https://feeds.npr.org/1004/rss.xml",
+        "NYT World":      "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+        "Times of India": "https://timesofindia.indiatimes.com/rssfeedstopstories.cms",
+        "The Hindu":      "https://www.thehindu.com/news/national/feeder/default.rss",
+        "NDTV":           "https://feeds.feedburner.com/ndtvnews-top-stories",
+    }
+    rows = []
+    for name, url in feeds.items():
+        try:
+            feed = feedparser.parse(url, agent="Mozilla/5.0")
+            for e in feed.entries[:MAX_ITEMS]:
+                rows.append({
+                    "source":   name,
+                    "category": "News",
+                    "title":    clean_text(e.get("title", "")),
+                    "text":     clean_text(e.get("summary", "") or e.get("title", "")),
+                })
+            print(f"   {name:18s}: {len(feed.entries[:MAX_ITEMS]):3d} articles")
+        except Exception:
+            print(f"   {name} failed")
+    return rows
+
+
+# ==============================================================================
+# 6. Running the Data Collectors
 # ------------------------------------------------------------------------------
-sns.set_theme(style="whitegrid", font_scale=1.05)
-fig = plt.figure(figsize=(19, 17), layout="constrained")
-gs = fig.add_gridspec(3, 2)
-ax_vol, ax_donut = fig.add_subplot(gs[0, 0]), fig.add_subplot(gs[0, 1])
-ax_stack, ax_avg = fig.add_subplot(gs[1, 0]), fig.add_subplot(gs[1, 1])
-ax_box, ax_words = fig.add_subplot(gs[2, 0]), fig.add_subplot(gs[2, 1])
+# Executing all collectors to build the working dataset.
+# ==============================================================================
 
-fig.suptitle(f"Live Global News Dashboard  |  {now:%d %b %Y, %H:%M}",
-             fontsize=22, fontweight="bold")
+print("=" * 70)
+print(f"STEP 1: Collecting live data  |  {datetime.now():%d %b %Y, %H:%M}")
+print("=" * 70)
+
+print("\nSocial sources:")
+all_rows = collect_mastodon()
+
+print("\nTech sources:")
+all_rows += collect_hackernews()
+
+print("\nNews sources:")
+all_rows += collect_news()
+
+# Combine all collected records into a Pandas DataFrame
+df = pd.DataFrame(all_rows, columns=["source", "category", "title", "text"])
+print(f"\nCollected {len(df)} items from {df['source'].nunique()} sources")
 
 
-def style(ax, title, subtitle):
-    """Bold title + a small plain-English line explaining how to read the chart."""
-    ax.set_title(f"{title}\n", fontsize=15, fontweight="bold", loc="left")
-    ax.text(0, 1.02, subtitle, transform=ax.transAxes, fontsize=10.5,
-            color="#555", style="italic", va="bottom")
+# ==============================================================================
+# 7. Data Cleaning and Duplicate Removal
+# ------------------------------------------------------------------------------
+# Real-world data contains blanks, duplicates, and short junk rows.
+# These are removed so that subsequent analysis remains accurate.
+#
+# Operations performed:
+#     - Drop rows whose text length is less than 10 characters
+#     - Drop rows with empty titles
+#     - Drop duplicate items by title
+#     - Re-index the DataFrame
+# ==============================================================================
+
+print("\n" + "=" * 70)
+print("STEP 2: Cleaning data")
+print("=" * 70)
+
+before = len(df)
+df = df[df["text"].str.len() > 10]
+df = df[df["title"].str.len() > 0]
+df = df.drop_duplicates(subset=["title"])
+df = df.reset_index(drop=True)
+
+print(f"Before cleaning : {before} rows")
+print(f"After cleaning  : {len(df)} rows")
+print(f"Removed         : {before - len(df)} rows")
 
 
-papers = df["newspaper"].unique().tolist()
-paper_palette = dict(zip(papers, sns.color_palette("crest", len(papers))))
+# ==============================================================================
+# 8. Word Counting and Keyword Analysis
+# ------------------------------------------------------------------------------
+# Word count per item and frequency of meaningful keywords are computed.
+# ==============================================================================
 
-# --- 1. Volume ----------------------------------------------------------------
-counts = df["newspaper"].value_counts()
-sns.barplot(x=counts.index, y=counts.values, hue=counts.index,
-            palette=paper_palette, legend=False, ax=ax_vol)
-ax_vol.bar_label(ax_vol.containers[0], fontsize=12, fontweight="bold", padding=3)
-style(ax_vol, "1. Articles Collected", "How many articles each newspaper contributed")
-ax_vol.set(xlabel="", ylabel="Number of articles")
+print("\n" + "=" * 70)
+print("STEP 3: Counting words")
+print("=" * 70)
 
-# --- 2. Donut -----------------------------------------------------------------
-sent_counts = df["sentiment_label"].value_counts().reindex(SENTIMENT_ORDER).fillna(0)
-ax_donut.pie(
-    sent_counts.values,
-    labels=[f"{l}\n({int(n)})" for l, n in sent_counts.items()],
-    colors=[SENTIMENT_COLORS[l] for l in sent_counts.index],
-    autopct=lambda p: f"{p:.0f}%" if p > 0 else "",
-    startangle=90, counterclock=False, pctdistance=0.78,
-    textprops=dict(fontsize=12),
-    wedgeprops=dict(width=0.42, edgecolor="white", linewidth=2.5),
-)
-for t in ax_donut.texts:                                # make the % labels white + bold
-    if t.get_text().endswith("%"):
-        t.set(color="white", fontweight="bold", fontsize=12)
-ax_donut.text(0, 0, f"{len(df)}\narticles", ha="center", va="center",
-              fontsize=18, fontweight="bold")
-style(ax_donut, "2. Overall Sentiment Mix", "Share of all articles that are negative / neutral / positive")
+df["word_count"] = df["text"].str.split().str.len()
 
-# --- 3. 100% stacked bar per newspaper ---------------------------------------------
-pct = (pd.crosstab(df["newspaper"], df["sentiment_label"], normalize="index")
-       .reindex(columns=SENTIMENT_ORDER, fill_value=0) * 100)
-pct.plot(kind="barh", stacked=True, ax=ax_stack, width=0.65,
-         color=[SENTIMENT_COLORS[c] for c in pct.columns], edgecolor="white")
-for cont in ax_stack.containers:                        # % label inside each segment
-    ax_stack.bar_label(cont, labels=[f"{v:.0f}%" if v >= 6 else "" for v in cont.datavalues],
-                       label_type="center", color="white", fontweight="bold")
-ax_stack.set_xlim(0, 100)
-ax_stack.legend(title="", ncol=3, loc="lower center", bbox_to_anchor=(0.5, -0.22), frameon=False)
-style(ax_stack, "3. Sentiment Mix by Newspaper",
-      "Each bar = 100% of that paper's articles (fair even if paper sizes differ)")
-ax_stack.set(xlabel="% of articles", ylabel="")
+word_counter = Counter()
+for text in df["text"]:
+    word_counter.update(get_keywords(text))
 
-# --- 4. Average score ----------------------------------------------------------
-avg = df.groupby("newspaper")["sentiment_score"].mean().sort_values(ascending=False)
-bar_colors = [SENTIMENT_COLORS["Positive"] if v > 0 else SENTIMENT_COLORS["Negative"] for v in avg.values]
-ax_avg.bar(avg.index, avg.values, color=bar_colors, width=0.55)
-ax_avg.bar_label(ax_avg.containers[0], fmt="%.3f", fontsize=12, fontweight="bold", padding=3)
-ax_avg.axhline(0, color="black", linewidth=1.2, linestyle="--")
-lim = max(0.1, avg.abs().max() * 1.4)
-ax_avg.set_ylim(-lim, lim)
-style(ax_avg, "4. Average Sentiment Score (High → Low)",
-      "Above 0 = more positive tone, below 0 = more negative tone")
-ax_avg.set(xlabel="", ylabel="Average score (-1 to +1)")
+top_words = pd.Series(dict(word_counter.most_common(TOP_N_WORDS)), dtype=float)
 
-# --- 5. Score distribution -----------------------------------------------------
-ax_box.axhspan(POS_THRESHOLD, 1, color=SENTIMENT_COLORS["Positive"], alpha=0.08)
-ax_box.axhspan(-1, NEG_THRESHOLD, color=SENTIMENT_COLORS["Negative"], alpha=0.08)
-sns.boxplot(data=df, x="newspaper", y="sentiment_score", hue="newspaper",
-            palette=paper_palette, legend=False, width=0.5, fliersize=0, ax=ax_box)
-sns.stripplot(data=df, x="newspaper", y="sentiment_score", color="#222", alpha=0.45,
-              size=3.5, jitter=0.2, ax=ax_box)
-ax_box.axhline(0, color="black", linewidth=1, linestyle="--")
-ax_box.set_ylim(-1, 1)
-style(ax_box, "5. Spread of Scores (every dot = 1 article)",
-      "Box = middle 50% of articles, line = median. Green zone positive, red zone negative")
-ax_box.set(xlabel="", ylabel="Sentiment score")
+print(f"Total words : {df['word_count'].sum():,}")
+print(f"Top 5 words : {list(top_words.index[:5])}")
 
-# --- 6. Top keywords -----------------------------------------------------------
-top_sorted = top_words.sort_values()
-ax_words.barh(top_sorted.index, top_sorted.values,
-              color=sns.color_palette("flare", len(top_sorted)))
-ax_words.bar_label(ax_words.containers[0], padding=3, fontweight="bold")
-style(ax_words, f"6. Top {TOP_N_WORDS} Keywords", "Most frequent meaningful words in today's headlines & summaries")
-ax_words.set(xlabel="Mentions", ylabel="")
 
-if SAVE_PNG:
-    fig.savefig("news_dashboard.png", dpi=150, bbox_inches="tight")
+# ==============================================================================
+# 9. Sentiment Analysis
+# ------------------------------------------------------------------------------
+# VADER assigns each item a compound score between -1 (very negative) and
+# +1 (very positive). Thresholds used to classify items:
+#
+#     score >=  0.05  -> Positive
+#     score <= -0.05  -> Negative
+#     between -0.05 and 0.05 -> Neutral
+# ==============================================================================
+
+print("\n" + "=" * 70)
+print("STEP 4: Analysing sentiment")
+print("=" * 70)
+
+df["sentiment_score"] = df["text"].apply(
+    lambda t: analyzer.polarity_scores(t)["compound"])
+
+df["sentiment_label"] = df["sentiment_score"].apply(score_to_label)
+
+pos = (df["sentiment_label"] == "Positive").sum()
+neu = (df["sentiment_label"] == "Neutral").sum()
+neg = (df["sentiment_label"] == "Negative").sum()
+
+print(f"Positive: {pos:4d} ({pos/len(df)*100:.1f}%)")
+print(f"Neutral : {neu:4d} ({neu/len(df)*100:.1f}%)")
+print(f"Negative: {neg:4d} ({neg/len(df)*100:.1f}%)")
+
+
+# ==============================================================================
+# 10. Source-wise Comparison and Statistical Analysis
+# ------------------------------------------------------------------------------
+# Sentiment scores are grouped by source to compute average sentiment values.
+# Cross-tabulation is used to calculate percentage distribution of sentiment
+# categories per source.
+# ==============================================================================
+
+print("\n" + "=" * 70)
+print("STEP 5: Comparing sources")
+print("=" * 70)
+
+summary = df.groupby("source").agg(
+    items=("text", "count"),
+    total_words=("word_count", "sum"),
+    avg_words=("word_count", "mean"),
+    avg_mood=("sentiment_score", "mean"),
+).sort_values("items", ascending=False)
+
+mood_pct = (pd.crosstab(df["source"], df["sentiment_label"], normalize="index")
+            .reindex(columns=MOODS, fill_value=0) * 100)
+
+print(summary.round(2).to_string())
+
+
+# ==============================================================================
+# 11. Data Visualization
+# ------------------------------------------------------------------------------
+# A six-panel dashboard is created:
+#
+#     1. Items per Source
+#     2. Total Words per Source
+#     3. Average Words per Item
+#     4. Sentiment Mix (100% per Source)
+#     5. Average Sentiment Score
+#     6. Top Keywords
+# ==============================================================================
+
+print("\n" + "=" * 70)
+print("STEP 6: Drawing dashboard")
+print("=" * 70)
+
+fig, ax = plt.subplots(3, 2, figsize=(18, 17), layout="constrained")
+fig.suptitle(f"Live Social Media Data Dashboard  |  {datetime.now():%d %b %Y}",
+             fontsize=20, fontweight="bold")
+
+
+def tilt(a):
+    """Rotate x-axis labels so long source names do not overlap."""
+    plt.setp(a.get_xticklabels(), rotation=30, ha="right", fontsize=8)
+
+
+# Chart 1: Items per Source
+bars = ax[0, 0].bar(summary.index, summary["items"], color="#3498DB")
+ax[0, 0].bar_label(bars, fontweight="bold", fontsize=8)
+ax[0, 0].set_title("1. Items per Source", loc="left", fontsize=13, fontweight="bold")
+ax[0, 0].set_ylabel("Count"); tilt(ax[0, 0])
+
+# Chart 2: Total Words per Source
+bars = ax[0, 1].bar(summary.index, summary["total_words"], color="#9B59B6")
+ax[0, 1].bar_label(bars, fontweight="bold", fontsize=8)
+ax[0, 1].set_title("2. Total Words", loc="left", fontsize=13, fontweight="bold")
+ax[0, 1].set_ylabel("Words"); tilt(ax[0, 1])
+
+# Chart 3: Average Words per Item
+bars = ax[1, 0].bar(summary.index, summary["avg_words"], color="#F39C12")
+ax[1, 0].bar_label(bars, fmt="%.1f", fontweight="bold", fontsize=8)
+ax[1, 0].set_title("3. Average Words per Item", loc="left", fontsize=13, fontweight="bold")
+ax[1, 0].set_ylabel("Words"); tilt(ax[1, 0])
+
+# Chart 4: Sentiment Mix (100% stacked)
+mood_pct.plot(kind="barh", stacked=True, ax=ax[1, 1],
+              color=[COLORS[c] for c in mood_pct.columns])
+ax[1, 1].set_xlim(0, 100)
+ax[1, 1].set_title("4. Sentiment Mix (100% per source)", loc="left",
+                   fontsize=13, fontweight="bold")
+ax[1, 1].set_xlabel("%")
+ax[1, 1].legend(title="", loc="lower right", fontsize=8)
+
+# Chart 5: Average Sentiment Score
+colors = [COLORS["Positive"] if v >= 0 else COLORS["Negative"]
+          for v in summary["avg_mood"]]
+bars = ax[2, 0].bar(summary.index, summary["avg_mood"], color=colors)
+ax[2, 0].bar_label(bars, fmt="%.3f", fontweight="bold", fontsize=8)
+ax[2, 0].axhline(0, color="black", linestyle="--", linewidth=1)
+ax[2, 0].set_title("5. Average Sentiment Score", loc="left", fontsize=13, fontweight="bold")
+ax[2, 0].set_ylabel("Score (-1 to +1)"); tilt(ax[2, 0])
+
+# Chart 6: Top Keywords
+sw = top_words.sort_values()
+bars = ax[2, 1].barh(sw.index, sw.values, color="#16A085")
+ax[2, 1].bar_label(bars, fontweight="bold", fontsize=8)
+ax[2, 1].set_title(f"6. Top {TOP_N_WORDS} Words", loc="left", fontsize=13, fontweight="bold")
+ax[2, 1].set_xlabel("Times used")
+
+plt.savefig("capstone_dashboard.png", dpi=150, bbox_inches="tight")
 plt.show()
+print("Saved: capstone_dashboard.png")
 
 
+# ==============================================================================
+# 12. Saving Results
 # ------------------------------------------------------------------------------
-# 5. TEXT SUMMARY
+# The full dataset and the source-level summary are saved as CSV files.
+# ==============================================================================
+
+df.to_csv("capstone_data.csv", index=False)
+summary.to_csv("capstone_summary.csv")
+print("Saved: capstone_data.csv")
+print("Saved: capstone_summary.csv")
+
+
+# ==============================================================================
+# 13. Final Report
 # ------------------------------------------------------------------------------
-def show_headlines(title, frame):
-    print(f"\n{title}")
-    for _, r in frame.iterrows():
-        line = f"[{r.sentiment_score:+.2f}] {r.newspaper}: {r.title}"
-        print(textwrap.fill(line, 100, initial_indent="  • ", subsequent_indent="      "))
+# A concise text-based summary is printed for the project submission.
+# ==============================================================================
+
+print("\n" + "=" * 70)
+print("FINAL REPORT")
+print("=" * 70)
+print(f"Total items analysed    : {len(df):,}")
+print(f"Total words analysed    : {df['word_count'].sum():,}")
+print(f"Sources used            : {df['source'].nunique()}")
+print(f"Most items from         : {summary['items'].idxmax()} "
+      f"({summary['items'].max()})")
+print(f"Most positive source    : {summary['avg_mood'].idxmax()} "
+      f"({summary['avg_mood'].max():+.3f})")
+print(f"Most negative source    : {summary['avg_mood'].idxmin()} "
+      f"({summary['avg_mood'].min():+.3f})")
+
+print("\nTop 3 most positive posts:")
+for _, r in df.nlargest(3, "sentiment_score").iterrows():
+    print(f"  [{r['sentiment_score']:+.2f}] {r['source']}: {r['title'][:60]}")
+
+print("\nTop 3 most negative posts:")
+for _, r in df.nsmallest(3, "sentiment_score").iterrows():
+    print(f"  [{r['sentiment_score']:+.2f}] {r['source']}: {r['title'][:60]}")
+
+print("\n" + "=" * 70)
+print("PROJECT COMPLETE")
+print("=" * 70)
 
 
-print("\n" + "=" * 60)
-print("📈 LIVE DATA SUMMARY")
-print("=" * 60)
-print(f"Total articles analyzed : {len(df)} from {df['newspaper'].nunique()} newspapers")
-print(f"Most positive newspaper : {avg.index[0]} ({avg.iloc[0]:+.3f})")
-print(f"Most negative newspaper : {avg.index[-1]} ({avg.iloc[-1]:+.3f})")
-print(f"Overall average score   : {df['sentiment_score'].mean():+.3f}")
-show_headlines("🟢 Most positive headlines:", df.nlargest(3, "sentiment_score"))
-show_headlines("🔴 Most negative headlines:", df.nsmallest(3, "sentiment_score"))
-print("=" * 60)
+# ==============================================================================
+# 14. Project Outcome
+# ------------------------------------------------------------------------------
+# The project demonstrates a complete data-analysis workflow:
+#
+#     Data Collection -> Data Cleaning -> Data Transformation ->
+#     Sentiment Analysis -> Keyword Analysis -> Statistical Analysis ->
+#     Visualization -> Findings -> Conclusion
+#
+# Output files:
+#     - capstone_dashboard.png   : 6-chart visual dashboard
+#     - capstone_data.csv        : full dataset with sentiment scores
+#     - capstone_summary.csv     : source-level aggregate statistics
+# ==============================================================================
